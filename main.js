@@ -5,21 +5,77 @@ window.onload = function(){
     var height = canvas.height = window.innerHeight;
 
     var points = [];
+    var sticks = [];
     var bounce = 0.9;
     var gravity = 0.5;
     var friction = 0.999;
     points.push({
-        x: 100,
-        y: 100,
-        oldx: 95,
-        oldy: 95
+		x: 100,
+		y: 100,
+		oldx: 100 + Math.random() * 30 - 15,
+		oldy: 100 + Math.random() * 30 - 15
+	});
+	points.push({
+		x: 200,
+		y: 100,
+		oldx: 200,
+		oldy: 100
+	});
+	points.push({
+		x: 200,
+		y: 200,
+		oldx: 200,
+		oldy: 200
+	});
+	points.push({
+		x: 100,
+		y: 200,
+		oldx: 100,
+		oldy: 200
+	});
+
+	sticks.push({
+		p0: points[0],
+		p1: points[1],
+		length: distance(points[0], points[1])
+	});
+	sticks.push({
+		p0: points[1],
+		p1: points[2],
+		length: distance(points[1], points[2])
+	});
+	sticks.push({
+		p0: points[2],
+		p1: points[3],
+		length: distance(points[2], points[3])
+	});
+	sticks.push({
+		p0: points[3],
+		p1: points[0],
+		length: distance(points[3], points[0])
     });
+    sticks.push({
+        p0: points[0],
+        p1: points[2],
+        length: distance(points[0], points[2])
+    });
+
+    function distance(p0, p1){
+        var dx = p1.x - p0.x;
+        var dy = p1.y - p0.y;
+        return Math.sqrt(dx*dx + dy*dy);
+    }
 
     update();
 
     function update(){
         updatePoints();
+        for(var i = 0; i < 2; i++){
+            updateSticks();
+            constrainPoints();
+        }
         renderPoints();
+        renderSticks();
         requestAnimationFrame(update);
     }
 
@@ -34,20 +90,49 @@ window.onload = function(){
             p.x += vx;
             p.y += vy;
             p.y += gravity;
+        }
+    }
 
-            if(p.x > width){
-                p.x = width;
-                p.oldx = p.x + vx * bounce;
-            } else if(p.x < 0){
-                p.x = 0;
-                p.oldx = p.x + vx * bounce;
-            } else if(p.y > height){
-                p.y = height;
-                p.oldy = p.y + vy * bounce;
-            } else if(p.y < 0){
-                p.y = 0;
-                p.oldy = p.y + vy * bounce;
-            }
+    function constrainPoints(){
+        for(var i = 0; i < points.length; i++) {
+			var p = points[i];
+			var	vx = (p.x - p.oldx) * friction;
+			var	vy = (p.y - p.oldy) * friction;
+
+			if(p.x > width) {
+				p.x = width;
+				p.oldx = p.x + vx * bounce;
+			}
+			else if(p.x < 0) {
+				p.x = 0;
+				p.oldx = p.x + vx * bounce;
+			}
+			if(p.y > height) {
+				p.y = height;
+				p.oldy = p.y + vy * bounce;
+			}
+			else if(p.y < 0) {
+				p.y = 0;
+				p.oldy = p.y + vy * bounce;
+			}
+		}
+    }
+
+    function updateSticks(){
+        for(var i = 0; i < sticks.length; i++){
+            var s = sticks[i];
+            var dx = s.p1.x - s.p0.x;
+            var dy = s.p1.y - s.p0.y;
+            var distance = Math.sqrt(dx*dx + dy*dy);
+            var difference = s.length - distance;
+            var percent = difference / distance / 2;
+            var offsetX = dx*percent;
+            var offsetY = dy*percent;
+
+            s.p0.x -= offsetX;
+            s.p0.y -= offsetY;
+            s.p1.x += offsetX;
+            s.p1.y += offsetY;
         }
     }
 
@@ -59,5 +144,15 @@ window.onload = function(){
             context.arc(p.x, p.y, 5, 0, Math.PI * 2);
             context.fill();
         }
+    }
+
+    function renderSticks(){
+        context.beginPath();
+        for(var i = 0; i < sticks.length; i++){
+            var s = sticks[i];
+            context.moveTo(s.p0.x, s.p0.y);
+            context.lineTo(s.p1.x, s.p1.y);
+        }
+        context.stroke();
     }
 };
